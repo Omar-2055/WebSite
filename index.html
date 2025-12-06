@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مساعدة الطريق السريعة | نظام العميل والموظف</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="auth-screen" class="app-screen bg-primary d-flex justify-content-center align-items-center vh-100">
+        <div class="login-container card shadow-lg p-4 p-md-5">
+            <h1 class="text-primary mb-4">🛠 نظام مساعدة الطريق</h1>
+
+            <form id="login-form" class="mb-4">
+                <h2 class="h4 text-center mb-3 text-secondary">تسجيل الدخول</h2>
+                <div class="mb-3">
+                    <input type="text" id="login-username" class="form-control" required placeholder="اسم المستخدم">
+                </div>
+                <div class="mb-3">
+                    <input type="password" id="login-password" class="form-control" required placeholder="كلمة المرور">
+                </div>
+                <div class="mb-3">
+                    <select id="login-role" class="form-select" required>
+                        <option value="client">تسجيل الدخول كـ عميل</option>
+                        <option value="employee">تسجيل الدخول كـ موظف</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success w-100 mb-2">تسجيل الدخول</button>
+            </form>
+
+            <div class="text-center my-3 text-muted">أو</div>
+
+            <button id="show-client-signup-btn" class="btn btn-info w-100 mb-2">إنشاء حساب كـ عميل</button>
+            <button id="show-employee-signup-btn" class="btn btn-warning w-100 mb-2">إنشاء حساب كـ موظف</button>
+            <button id="guest-btn" class="btn btn-secondary w-100">المتابعة كزائر</button>
+        </div>
+
+        <div id="signup-container" class="login-container card shadow-lg p-4 p-md-5 hidden">
+            <h2 class="h4 text-center mb-3 text-secondary">إنشاء حساب</h2>
+            <form id="signup-form">
+                <input type="hidden" id="signup-role">
+                <div class="mb-3">
+                    <input type="text" id="signup-username" class="form-control" required placeholder="اسم مستخدم جديد">
+                </div>
+                <div class="mb-3">
+                    <input type="password" id="signup-password" class="form-control" required placeholder="كلمة مرور">
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mb-3" id="signup-submit-btn">تسجيل</button>
+            </form>
+            <button id="show-login-btn" class="btn btn-link w-100">العودة لتسجيل الدخول</button>
+        </div>
+    </div>
+
+    <div id="client-main-screen" class="app-screen container-fluid p-0 hidden">
+        <nav class="navbar navbar-dark bg-danger shadow-sm">
+            <div class="container-fluid">
+                <span class="navbar-brand mb-0 h1">مرحباً بك، <span id="client-user-name-display"></span> (عميل)</span>
+                <div class="d-flex">
+                    <button id="show-client-history-btn" class="btn btn-outline-light me-2">سجل طلباتي</button>
+                    <button id="client-logout-btn" class="btn btn-outline-warning">تسجيل الخروج</button>
+                </div>
+            </div>
+        </nav>
+        <div class="container mt-4">
+            <h1 class="mb-4 text-danger">طلب المساعدة العاجلة</h1>
+
+            <div id="car-image-display" class="card mb-4 hidden">
+                <img src="https://via.placeholder.com/600x200?text=Car+Image+Placeholder" class="card-img-top"
+                    alt="صورة السيارة" style="max-height: 200px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title text-center">سيارتك: <span id="displayed-car-make"></span></h5>
+                </div>
+            </div>
+
+            <div class="location-status alert alert-info p-3 mb-4">
+                <h4 class="alert-heading">📍 موقعك الحالي:</h4>
+                <p id="location-text" class="mb-2">جاري تحديد الموقع...</p>
+                <div id="map-container" class="mt-3"></div>
+            </div>
+
+            <form id="assistance-form" class="card p-4 shadow-sm">
+                <h2 class="card-title mb-4">📝 تفاصيل الطلب ونوع السيارة:</h2>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="car-make" class="form-label">نوع السيارة (الماركة):</label>
+                        <select id="car-make" class="form-select" required>
+                            <option value="">اختر ماركة</option>
+                            <option value="Toyota">تويوتا</option>
+                            <option value="Hyundai">هيونداي</option>
+                            <option value="Nissan">نيسان</option>
+                            <option value="Mercedes">مرسيدس</option>
+                            <option value="Other">أخرى</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="car-model" class="form-label">الموديل (سنة الصنع):</label>
+                        <input type="number" id="car-model" class="form-control" required placeholder="مثال: 2020">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="issue" class="form-label">نوع العطل:</label>
+                    <select id="issue" class="form-select" required>
+                        <option value="">اختر المشكلة</option>
+                        <option value="flat-tire">إطار مثقوب (بنشر)</option>
+                        <option value="dead-battery">بطارية فارغة (شحن)</option>
+                        <option value="fuel-out">نفاد الوقود</option>
+                        <option value="engine-fault">عطل ميكانيكي (ونش)</option>
+                        <option value="other">أخرى</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="phone" class="form-label">رقم الهاتف للتواصل:</label>
+                    <input type="tel" id="phone" class="form-control" required placeholder="مثال: 01xxxxxxxxx">
+                    <div id="phone-feedback" class="invalid-feedback d-none">الرجاء إدخال رقم هاتف صحيح (11 رقماً).
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-danger btn-lg w-100">طلب المساعدة الآن</button>
+            </form>
+
+            <div id="results" class="mt-4 hidden">
+                <h2 class="text-success">📞 مقدمو الخدمات القريبون (الموصى بهم):</h2>
+            </div>
+        </div>
+    </div>
+
+    <div id="employee-main-screen" class="app-screen container-fluid p-0 hidden">
+        <nav class="navbar navbar-dark bg-success shadow-sm">
+            <div class="container-fluid">
+                <span class="navbar-brand mb-0 h1">لوحة تحكم: <span id="employee-user-name-display"></span>
+                    (موظف)</span>
+                <div class="d-flex">
+                    <button id="refresh-requests-btn" class="btn btn-outline-light me-2">تحديث الطلبات</button>
+                    <button id="employee-logout-btn" class="btn btn-outline-warning">تسجيل الخروج</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container mt-4">
+            <h1 class="mb-4 text-success">طلبات المساعدة العاجلة (الواردة):</h1>
+            <div id="incoming-requests-container">
+                <div class="alert alert-info">جاري تحميل الطلبات...</div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="client-history-screen" class="app-screen container-fluid p-0 hidden">
+        <nav class="navbar navbar-dark bg-secondary shadow-sm">
+            <div class="container-fluid">
+                <button id="back-to-client-main-btn" class="btn btn-outline-light">العودة للصفحة الرئيسية</button>
+                <span class="navbar-brand mb-0 h1">سجل الطلبات والتقييم</span>
+            </div>
+        </nav>
+
+        <div class="container mt-4">
+            <h1 class="mb-4">سجل طلبات المساعدة</h1>
+            <div id="requests-history">
+                <p class="text-center text-muted">لا يوجد طلبات سابقة مسجلة.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
