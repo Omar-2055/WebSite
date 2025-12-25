@@ -51,6 +51,19 @@
                 <div class="mb-3">
                     <input type="password" id="signup-password" class="form-control" required placeholder="كلمة مرور">
                 </div>
+                <div class="mb-3 hidden" id="signup-phone-group">
+                    <input type="tel" id="signup-phone" class="form-control" placeholder="رقم الهاتف للتواصل (11 رقم)">
+                </div>
+                <div class="mb-3 hidden" id="signup-specialty-group">
+                    <select id="signup-specialty" class="form-select">
+                        <option value="">اختر التخصص الأساسي</option>
+                        <option value="flat-tire">بنشر/إطار</option>
+                        <option value="dead-battery">بطارية/شحن</option>
+                        <option value="engine-fault">ونش/ميكانيكا</option>
+                        <option value="fuel-out">وقود</option>
+                        <option value="other">أخرى</option>
+                    </select>
+                </div>
                 <button type="submit" class="btn btn-primary w-100 mb-3" id="signup-submit-btn">تسجيل</button>
             </form>
             <button id="show-login-btn" class="btn btn-link w-100">العودة لتسجيل الدخول</button>
@@ -69,14 +82,6 @@
         </nav>
         <div class="container mt-4">
             <h1 class="mb-4 text-danger">طلب المساعدة العاجلة</h1>
-
-            <div id="car-image-display" class="card mb-4 hidden">
-                <img src="https://via.placeholder.com/600x200?text=Car+Image+Placeholder" class="card-img-top"
-                    alt="صورة السيارة" style="max-height: 200px; object-fit: cover;">
-                <div class="card-body">
-                    <h5 class="card-title text-center">سيارتك: <span id="displayed-car-make"></span></h5>
-                </div>
-            </div>
 
             <div class="location-status alert alert-info p-3 mb-4">
                 <h4 class="alert-heading">📍 موقعك الحالي:</h4>
@@ -117,7 +122,7 @@
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label for="phone" class="form-label">رقم الهاتف للتواصل:</label>
+                    <label for="phone" class="form-label">رقم الهاتف للتواصل (11 رقم):</label>
                     <input type="tel" id="phone" class="form-control" required placeholder="مثال: 01xxxxxxxxx">
                     <div id="phone-feedback" class="invalid-feedback d-none">الرجاء إدخال رقم هاتف صحيح (11 رقماً).
                     </div>
@@ -127,7 +132,7 @@
             </form>
 
             <div id="results" class="mt-4 hidden">
-                <h2 class="text-success">📞 مقدمو الخدمات القريبون (الموصى بهم):</h2>
+                <h2 class="text-success">📞 الموظفون المتاحون:</h2>
             </div>
         </div>
     </div>
