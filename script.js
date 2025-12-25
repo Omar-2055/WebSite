@@ -3,27 +3,30 @@
 // ==============================================
 // 1. البيانات والتخزين
 // ==============================================
-const mockServices = [
-    { id: 1, name: "مركز الأمل للصيانة", type: "ميكانيكا", phone: "01012345678", specialties: ["engine-fault", "dead-battery"], rating: 4.5 },
-    { id: 2, name: "ونش النجمة الساطعة", type: "ونش/سحب", phone: "01198765432", specialties: ["engine-fault", "other"], rating: 4.8 },
-]; // بيانات الخدمات (لشاشة العميل)
-
+// تم حذف بيانات الخدمات الوهمية mockServices
 let userLatitude = null;
 let userLongitude = null;
 let currentUser = null; 
-let currentUserRole = null; // لتخزين دور المستخدم (client أو employee)
+let currentUserRole = null; 
 
 // ==============================================
 // 2. وظائف إدارة المستخدمين (تحقق/تسجيل/دخول)
 // ==============================================
 
-function saveUser(username, password, role) {
-    // تخزين المستخدمين مع دورهم (Client أو Employee)
+function saveUser(username, password, role, phone = null, specialty = null) {
+    // تخزين المستخدمين مع دورهم (Client أو Employee) ورقم الهاتف والتخصص للموظف
     const users = JSON.parse(localStorage.getItem('users')) || {};
     if (users[username]) {
         return false;
     }
-    users[username] = { password: password, role: role };
+    
+    users[username] = { 
+        password: password, 
+        role: role,
+        phone: phone, 
+        specialty: specialty
+    };
+    
     localStorage.setItem('users', JSON.stringify(users));
     return true;
 }
@@ -97,7 +100,8 @@ function showPosition(position) {
     document.getElementById("location-text").innerHTML = 
         `✅ تم تحديد الموقع بنجاح!<br>خط العرض: **${latText}**، خط الطول: **${lonText}**`;
 
-    const mapLink = `https://www.google.com/maps/search/?api=1&query=${userLatitude},${userLongitude}`;
+    // تصحيح رابط الخريطة
+    const mapLink = `http://google.com/maps/search/?api=1&query=${userLatitude},${userLongitude}`;
     
     document.getElementById("map-container").innerHTML = `
         <a href="${mapLink}" target="_blank" class="btn btn-primary w-100">
@@ -108,7 +112,6 @@ function showPosition(position) {
 
 function showError(error) {
     document.querySelector('.location-status').classList.remove('location-loading');
-    // ... (نفس منطق عرض الخطأ القديم)
     const locationTextElement = document.getElementById("location-text");
     locationTextElement.innerText = "❌ فشل تحديد الموقع، يرجى تفعيل الموقع.";
 }
@@ -138,31 +141,44 @@ function saveNewRequest(issueType, phoneNumber, carMake, carModel, lat, lon) {
     return newRequest;
 }
 
-function displayResults(issueType, carMake) { 
+function displayResults(issueType) { 
     const resultsDiv = document.getElementById("results");
     
-    document.getElementById("car-image-display").classList.remove('hidden');
-    document.getElementById("displayed-car-make").innerText = carMake;
-    
-    const filteredServices = mockServices
-        .filter(service => service.specialties.includes(issueType))
-        .sort((a, b) => b.rating - a.rating); 
+    // جلب كل الموظفين (مزودي الخدمة) الذين يتطابق تخصصهم
+    const users = JSON.parse(localStorage.getItem('users')) || {};
+    const employees = Object.keys(users)
+        .map(username => ({ username, ...users[username] }))
+        .filter(user => user.role === 'employee' && user.specialty === issueType);
 
     resultsDiv.classList.remove("hidden");
     
-    // ... (بقية منطق عرض الخدمات كما كان)
     let htmlContent = '';
-    filteredServices.forEach(service => {
-        htmlContent += `
-            <div class="service-item card p-3 shadow-sm">
-                <p class="mb-1"><strong>${service.name}</strong> (${service.type})</p>
-                <p class="text-muted mb-2">المسافة التقريبية: 3 كم | التقييم: 4.5</p>
-                <a href="tel:${service.phone}" class="btn btn-success btn-sm w-auto">اتصل الآن: ${service.phone}</a>
-            </div>
-        `;
-    });
     
-    resultsDiv.innerHTML = `<h2>📞 مقدمو الخدمات القريبون (الموصى بهم):</h2>${htmlContent}`;
+    if (employees.length === 0) {
+        // دالة مساعدة لتحويل قيمة العطل إلى نص عربي مفهوم (مكررة للاستخدام هنا)
+        const issueMap = {
+            'flat-tire': 'إطار مثقوب (بنشر)',
+            'dead-battery': 'بطارية فارغة (شحن)',
+            'fuel-out': 'نفاد الوقود',
+            'engine-fault': 'عطل ميكانيكي (ونش)',
+            'other': 'أخرى / غير محدد'
+        };
+        const issueText = issueMap[issueType] || issueType;
+
+        htmlContent = `<div class="alert alert-warning">⚠️ لا يوجد موظفين متاحين حالياً يختصون بـ **${issueText}**</div>`;
+    } else {
+        employees.forEach(employee => {
+            htmlContent += `
+                <div class="service-item card p-3 shadow-sm mb-3">
+                    <p class="mb-1"><strong>الموظف المتاح: ${employee.username}</strong></p>
+                    <p class="text-muted mb-2">رقم الهاتف:</p>
+                    <a href="tel:${employee.phone}" class="btn btn-success btn-sm w-auto">اتصل الآن: ${employee.phone}</a>
+                </div>
+            `;
+        });
+    }
+    
+    resultsDiv.innerHTML = `<h2>📞 الموظفون المتاحون:</h2>${htmlContent}`;
 }
 
 // ==============================================
@@ -180,17 +196,27 @@ function loadIncomingRequests() {
         return;
     }
 
+    // دالة مساعدة لتحويل قيمة العطل إلى نص عربي مفهوم
+    const issueMap = {
+        'flat-tire': 'إطار مثقوب (بنشر)',
+        'dead-battery': 'بطارية فارغة (شحن)',
+        'fuel-out': 'نفاد الوقود',
+        'engine-fault': 'عطل ميكانيكي (ونش)',
+        'other': 'أخرى / غير محدد'
+    };
+
     let htmlContent = '';
     pendingRequests.forEach(req => {
         const date = new Date(req.timestamp).toLocaleString('ar-EG');
-        const mapLink = `https://www.google.com/maps/search/?api=1&query=${req.latitude},${req.longitude}`;
+        const mapLink = `http://google.com/maps/search/?api=1&query=${req.latitude},${req.longitude}`;
+        const issueText = issueMap[req.issueType] || req.issueType;
 
         htmlContent += `
             <div class="request-card card p-3 mb-3 shadow-sm">
-                <p class="mb-1"><strong>العميل: ${req.client}</strong> - <span class="badge bg-danger">${req.issueType}</span></p>
+                <p class="mb-1"><strong>العميل: ${req.client}</strong> - <span class="badge bg-danger">${issueText}</span></p>
                 <p class="mb-1">التاريخ: ${date}</p>
                 <p class="mb-1">السيارة: ${req.carMake} ${req.carModel}</p>
-                <p class="mb-2"><strong>للتواصل: ${req.phoneNumber}</strong></p>
+                <p class="mb-2"><strong>رقم هاتف العميل: ${req.phoneNumber}</strong></p>
                 
                 <a href="${mapLink}" target="_blank" class="btn btn-success btn-sm w-100 mb-2">
                     عرض موقع العميل على الخريطة (اللوكيشن)
@@ -234,33 +260,63 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
     }
 });
 
-// **منطق إنشاء حساب**
+// **منطق إنشاء حساب (مع إظهار حقول الموظف)**
 let currentSignupRole = '';
-document.getElementById('show-client-signup-btn').addEventListener('click', function() {
-    currentSignupRole = 'client';
-    document.getElementById('signup-submit-btn').innerText = 'تسجيل كـ عميل';
-    document.getElementById('signup-container').querySelector('h2').innerText = 'إنشاء حساب كـ عميل';
-    showSignupScreen();
-});
-
-document.getElementById('show-employee-signup-btn').addEventListener('click', function() {
-    currentSignupRole = 'employee';
-    document.getElementById('signup-submit-btn').innerText = 'تسجيل كـ موظف';
-    document.getElementById('signup-container').querySelector('h2').innerText = 'إنشاء حساب كـ موظف';
-    showSignupScreen();
-});
+const signupContainer = document.getElementById('signup-container');
+const signupPhoneGroup = document.getElementById('signup-phone-group');
+const signupSpecialtyGroup = document.getElementById('signup-specialty-group');
+const signupPhone = document.getElementById('signup-phone');
+const signupSpecialty = document.getElementById('signup-specialty');
 
 function showSignupScreen() {
     document.querySelector('.login-container').classList.add('hidden');
     document.getElementById('signup-container').classList.remove('hidden');
 }
 
+function updateSignupFormForRole(role) {
+    currentSignupRole = role;
+    const isEmployee = role === 'employee';
+    document.getElementById('signup-submit-btn').innerText = isEmployee ? 'تسجيل كـ موظف' : 'تسجيل كـ عميل';
+    signupContainer.querySelector('h2').innerText = `إنشاء حساب كـ ${isEmployee ? 'موظف' : 'عميل'}`;
+    
+    if (isEmployee) {
+        signupPhoneGroup.classList.remove('hidden');
+        signupSpecialtyGroup.classList.remove('hidden');
+        signupPhone.required = true;
+        signupSpecialty.required = true;
+    } else {
+        signupPhoneGroup.classList.add('hidden');
+        signupSpecialtyGroup.classList.add('hidden');
+        signupPhone.required = false;
+        signupSpecialty.required = false;
+    }
+    showSignupScreen();
+}
+
+document.getElementById('show-client-signup-btn').addEventListener('click', () => updateSignupFormForRole('client'));
+document.getElementById('show-employee-signup-btn').addEventListener('click', () => updateSignupFormForRole('employee'));
+
+
 document.getElementById('signup-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const username = document.getElementById('signup-username').value;
     const password = document.getElementById('signup-password').value;
+    
+    let phone = null;
+    let specialty = null;
 
-    if (saveUser(username, password, currentSignupRole)) {
+    if (currentSignupRole === 'employee') {
+        phone = signupPhone.value;
+        specialty = signupSpecialty.value;
+
+        // تحقق من رقم الهاتف للموظف (11 رقماً)
+        if (!/^\d{11}$/.test(phone)) {
+            alert('❌ الرجاء إدخال رقم هاتف صحيح مكون من 11 رقماً للموظف.');
+            return;
+        }
+    }
+    
+    if (saveUser(username, password, currentSignupRole, phone, specialty)) {
         alert(`✅ تم إنشاء الحساب كـ ${currentSignupRole === 'client' ? 'عميل' : 'موظف'} بنجاح! يمكنك الآن تسجيل الدخول.`);
         document.getElementById('signup-container').classList.add('hidden');
         document.querySelector('.login-container').classList.remove('hidden');
@@ -297,10 +353,17 @@ document.getElementById("assistance-form").addEventListener("submit", function(e
         return;
     }
     
+    // تحقق من رقم هاتف العميل (11 رقماً)
+    if (!/^\d{11}$/.test(phoneNumber)) {
+        alert('❌ الرجاء إدخال رقم هاتف صحيح مكون من 11 رقماً للتواصل.');
+        document.getElementById("phone").focus();
+        return;
+    }
+    
     // حفظ الطلب الجديد
     saveNewRequest(issueType, phoneNumber, carMake, carModel, userLatitude, userLongitude);
-    alert("✅ تم تسجيل طلبك بنجاح! سيتم إرسال موظف إليك قريباً.");
-    displayResults(issueType, carMake);
+    alert("✅ تم تسجيل طلبك بنجاح! سيتم عرض بيانات الموظفين المتاحين.");
+    displayResults(issueType);
 });
 
 
